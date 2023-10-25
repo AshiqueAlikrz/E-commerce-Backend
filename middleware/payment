@@ -1,0 +1,56 @@
+payment: async (req, res) => {
+    const id = req.params.id;
+    uid = id; //for passing as global variable
+    const user = await userDB.find({ _id: id }).populate("cart"); //user with cart
+    if (!user) {
+      return res.status(404).json({ message: "user not found " });
+    }
+    const cartItems = user[0].cart;
+    if (cartItems.length === 0) {
+      return res.status(400).json({ message: "Your cart is empty" });
+    }
+
+    const lineItems = cartItems.map((item) => {
+      return {
+        price_data: {
+          currency: "inr",
+          product_data: {
+            name: item.title,
+            description: item.description,
+          },
+          unit_amount: Math.round(item.price * 100), // when item.price only given ,error occur, why ? check its reason . why multiply 100
+        },
+        quantity: 1,
+      };
+    });
+    //declaring session as global variable
+
+    session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"], //, 'apple_pay', 'google_pay', 'alipay',card
+      line_items: lineItems,
+      mode: "payment",
+      success_url: "http://localhost:3000/api/users/payment/success", // Replace with your success URL
+      cancel_url: "http://localhost:3000/api/users/payment/cancel", // Replace with your cancel URL
+    });
+
+    if (!session) {
+      return res.json({
+        status: "Failure",
+        message: " Error occured on  Session side",
+      });
+    }
+    sValue = {
+      //values to be sent to success function
+      id,
+      user,
+      session,
+    };
+
+    res
+      .status(200)
+      .json({
+        status: "Success",
+        message: "Strip payment session created",
+        url: session.url,
+      });
+  }

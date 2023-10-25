@@ -5,7 +5,7 @@ const Product = require("../model/productSchema");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 let temp;
-let sValue = {};
+let successValues = {};
 
 module.exports = {
   register: async (req, res) => {
@@ -173,11 +173,11 @@ module.exports = {
 
   payment: async (req, res) => {
     const id = req.params.id;
-    const user = await User.find({ _id: id }).populate("cart"); //user with cart
+    const user = await User.findById(id).populate("cart"); //user with cart
     if (!user) {
       return res.status(404).json({ message: "user not found " });
     }
-    const cartItems = user[0].cart;
+    const cartItems = user.cart;
     if (cartItems.length === 0) {
       return res.status(400).json({ message: "Your cart is empty" });
     }
@@ -212,14 +212,18 @@ module.exports = {
         message: " Error occured on  Session side",
       });
     }
-
-    // sValue = {
-    //   //values to be sent to success function
-    //   id,
-    //   user,
-    //   session,
-    // };
-
+    successValues = {
+      id,
+      user,
+      newOrder: {
+        product: user.cart.map(
+          (product) => new mongoose.Types.ObjectId(product.id)
+        ),
+        order_id: Date.now(),
+        payment_id: session.id,
+        total_amount: session.amount_total / 100,
+      },
+    };
     res.status(200).json({
       status: "Success",
       message: "Strip payment session created",
@@ -228,16 +232,14 @@ module.exports = {
   },
 
   success: async (req, res) => {
-    console.log(temp);
-    const user = await User.find({ _id: temp.id });
+    const { id, user, newOrder } = successValues;
+    console.log(newOrder);
     if (user.length != 0) {
       await User.updateOne(
         { _id: temp.id },
         {
           $push: {
-            orders: {
-              
-            },
+            orders: {},
           },
         }
       );
