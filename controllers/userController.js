@@ -4,8 +4,8 @@ const User = require("../model/userSchema");
 const Product = require("../model/productSchema");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
-let temp;
 let successValues = {};
+let temp;
 
 module.exports = {
   register: async (req, res) => {
@@ -212,6 +212,7 @@ module.exports = {
         message: " Error occured on  Session side",
       });
     }
+
     successValues = {
       id,
       user,
@@ -224,6 +225,7 @@ module.exports = {
         total_amount: session.amount_total / 100,
       },
     };
+    console.log(user);
     res.status(200).json({
       status: "Success",
       message: "Strip payment session created",
@@ -233,18 +235,18 @@ module.exports = {
 
   success: async (req, res) => {
     const { id, user, newOrder } = successValues;
-    console.log(newOrder);
-    if (user.length != 0) {
-      await User.updateOne(
-        { _id: temp.id },
-        {
-          $push: {
-            orders: {},
-          },
-        }
-      );
-      await User.updateOne({ _id: temp.id }, { cart: [] });
-    }
+    console.log("neworder:", id);
+    // if (user.length != 0) {
+    //   await User.updateOne(
+    //     { _id: temp.id },
+    //     {
+    //       $push: {
+    //         orders: {},
+    //       },
+    //     }
+    //   );
+    //   await User.updateOne({ _id: temp.id }, { cart: [] });
+    // }
     res.status(200).json({
       status: "success",
       message: "successfully added in order",
