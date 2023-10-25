@@ -18,4 +18,9 @@ userRoutes.post("/:id/wishlist",verifyToken,tryCatch(controller.addToWishlist));
 userRoutes.get("/:id/wishlist",verifyToken,tryCatch(controller.getWishList));
 userRoutes.delete("/:id/wishlist",verifyToken,tryCatch(controller.deleteWishList));
 
+
+userRoutes.post("/:id/payment", verifyToken, tryCatch(controller.payment));
+userRoutes.get("/payment/success",tryCatch(controller.success));
+userRoutes.post("/payment/cancel",tryCatch(controller.cancel));
+
 module.exports = userRoutes;

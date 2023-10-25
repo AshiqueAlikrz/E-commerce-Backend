@@ -1,9 +1,9 @@
+require("dotenv").config();
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
 const adminRouter = require("./router/adminRoutes");
 const userRouter = require('./router/userRoutes')
-require("dotenv").config();
 mongoose.connect("mongodb://127.0.0.1:27017/E-commerceBackend", {
   useNewUrlParser: true,
   useUnifiedTopology: true,

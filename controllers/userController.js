@@ -2,6 +2,10 @@ const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const User = require("../model/userSchema");
 const Product = require("../model/productSchema");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
+let temp;
+let sValue = {};
 
 module.exports = {
   register: async (req, res) => {
@@ -20,18 +24,21 @@ module.exports = {
 
   userLogin: async (req, res) => {
     const { username, password } = req.body;
-    const user = { username, password };
-    if (user) {
+    const user = await User.findOne({ username: username, password: password });
+    console.log(user);
+    if (!user) {
+      res.status(401).json({ message: "Invalid username or password" });
+    } else {
       const token = jwt.sign(
         { username },
         process.env.USER_ACCESS_TOKEN_SECRET
       );
       res.status(200).json({
-        status: "sucess",
+        status: "success",
         message: "successfully logged in",
         data: { jwt_token: token },
       });
-    } else res.status(401).json({ message: "Invalid username or password" });
+    }
   },
 
   getAllProducts: async (req, res) => {
@@ -75,6 +82,7 @@ module.exports = {
       const userId = req.params.id;
       const productId = req.body.id;
       const product = await Product.findById(productId);
+      console.log(product);
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
@@ -144,7 +152,7 @@ module.exports = {
       );
 
       console.log(deleteWish);
-      res.status(200).json({ status: "item deleted from wishlist"});
+      res.status(200).json({ status: "item deleted from wishlist" });
     } else res.status(404).json({ error: "Error updating wishlist" });
   },
   deletCart: async (req, res) => {
@@ -156,7 +164,92 @@ module.exports = {
         { $pull: { cart: productId } }
       );
 
-      res.status(200).json({ status: "item deleted from cart"});
-    } else res.status(404).json({ error: "Error updating wishlist" ,data:deleteCart});
+      res.status(200).json({ status: "item deleted from cart" });
+    } else
+      res
+        .status(404)
+        .json({ error: "Error updating wishlist", data: deleteCart });
+  },
+
+  payment: async (req, res) => {
+    const id = req.params.id;
+    const user = await User.find({ _id: id }).populate("cart"); //user with cart
+    if (!user) {
+      return res.status(404).json({ message: "user not found " });
+    }
+    const cartItems = user[0].cart;
+    if (cartItems.length === 0) {
+      return res.status(400).json({ message: "Your cart is empty" });
+    }
+
+    const lineItems = cartItems.map((item) => {
+      return {
+        price_data: {
+          currency: "inr",
+          product_data: {
+            name: item.title,
+            description: item.description,
+          },
+          unit_amount: Math.round(item.price * 100), // when item.price only given ,error occur, why ? check its reason . why multiply 100
+        },
+        quantity: 1,
+      };
+    });
+
+    // //declaring session as global variable
+
+    session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"], //, 'apple_pay', 'google_pay', 'alipay',card
+      line_items: lineItems,
+      mode: "payment",
+      success_url: "http://localhost:3000/api/user/payment/success", // Replace with your success URL
+      cancel_url: "http://localhost:3000/api/user/payment/cancel", // Replace with your cancel URL
+    });
+
+    if (!session) {
+      return res.json({
+        status: "Failure",
+        message: " Error occured on  Session side",
+      });
+    }
+
+    // sValue = {
+    //   //values to be sent to success function
+    //   id,
+    //   user,
+    //   session,
+    // };
+
+    res.status(200).json({
+      status: "Success",
+      message: "Strip payment session created",
+      url: session.url,
+    });
+  },
+
+  success: async (req, res) => {
+    console.log(temp);
+    const user = await User.find({ _id: temp.id });
+    if (user.length != 0) {
+      await User.updateOne(
+        { _id: temp.id },
+        {
+          $push: {
+            orders: {
+              
+            },
+          },
+        }
+      );
+      await User.updateOne({ _id: temp.id }, { cart: [] });
+    }
+    res.status(200).json({
+      status: "success",
+      message: "successfully added in order",
+    });
+  },
+
+  cancel: async (req, res) => {
+    res.json("cancel");
   },
 };
