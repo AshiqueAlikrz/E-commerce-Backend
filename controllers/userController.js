@@ -218,7 +218,7 @@ module.exports = {
       id,
       user,
       newOrder: {
-        product: user.cart.map(
+        products: user.cart.map(
           (product) => new mongoose.Types.ObjectId(product.id)
         ),
         order_id: Date.now(),

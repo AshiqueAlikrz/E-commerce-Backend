@@ -22,6 +22,4 @@ userRoutes.get("/payment/success",tryCatch(controller.success));
 userRoutes.post("/payment/cancel",tryCatch(controller.cancel));
 userRoutes.get("/:id/orders",tryCatch(controller.showOrders));
 
-
-
 module.exports = userRoutes;

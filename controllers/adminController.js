@@ -146,8 +146,8 @@ module.exports = {
       {
         $group: {
           _id: null,
-          totalRevenue: { $sum: "$orders.totalamount" }, 
-          totalItemsSold: { $sum: { $size: "$orders.product" }} 
+          totalRevenue: { $sum: "$orders.total_amount" }, 
+          totalItemsSold: { $sum: { $size: "$orders.products" }} 
         },
       },
     ]);
