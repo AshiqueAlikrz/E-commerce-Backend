@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const User = require("../model/userSchema");
 const Product = require("../model/productSchema");
+const Order = require("../model/orderSchema");
 
 module.exports = {
   login: async (req, res) => {
@@ -141,29 +142,37 @@ module.exports = {
     });
   },
   stats: async (req, res) => {
-    const aggregation = User.aggregate([
-      { $unwind: "$orders" },
+    const aggregation = await Order.aggregate([
       {
         $group: {
           _id: null,
-          totalRevenue: { $sum: "$orders.total_amount" }, 
-          totalItemsSold: { $sum: { $size: "$orders.products" }} 
-        },
-      },
+          totalItemsSold: {
+            $sum: {
+              $cond: [
+                { $isArray: "$products" },
+                { $size: "$products" },
+                0
+              ]
+            }
+          },
+          totalRevenue: { $sum: { $toDouble: "$total_amount" } }
+        }
+      }
+      ,
+
     ]);
-    console.log(aggregation);
-    const result=await aggregation.exec();
-    const totalRevenue=result[0].totalRevenue;
-    const totalItemsSold=result[0].totalItemsSold;
+    const totalRevenue = aggregation[0].totalRevenue;
+    const totalItemsSold = aggregation[0].totalItemsSold;
+    
 
     res.status(200).json({
-      status:"success",
-      message:"successfully fetched stats",
-      data:{
+      status: "success",
+      message: "successfully fetched stats",
+      data: {
         "Total Revenue": totalRevenue,
-          "Toal Item Sold": totalItemsSold
-      }
-    })
+        "Total Item Sold": totalItemsSold,
+      },
+    });
   },
 };
 

@@ -6,7 +6,6 @@ const Order = require("../model/orderSchema");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 let successValues = {};
-let temp;
 
 module.exports = {
   register: async (req, res) => {
@@ -226,7 +225,7 @@ module.exports = {
         total_amount: session.amount_total / 100,
       },
     };
-    // console.log(user);
+    // console.log("successValues",successValues);
     res.status(200).json({
       status: "Success",
       message: "Strip payment session created",
@@ -236,10 +235,11 @@ module.exports = {
 
   success: async (req, res) => {
     const { id, user, newOrder } = successValues;
-    // console.log("neworder:", id);
-    const order = await Order.create({ ...newOrder });
+    console.log("neworder:", newOrder);
+     await Order.create({ ...newOrder });
+    console.log("odersssss",order);
     await User.findByIdAndUpdate({ _id: id }, { $push: { orders: order._id } });
-    user.cart = [];
+    // user.cart = [];
     await user.save();
 
     res.status(200).json({
@@ -262,6 +262,6 @@ module.exports = {
         data: showOrderproducts,
       });
     }
-    // console.log(showOrderproducts);
+    console.log(showOrderproducts);
   },
 };
