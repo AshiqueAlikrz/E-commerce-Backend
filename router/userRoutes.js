@@ -17,10 +17,11 @@ userRoutes.delete("/:id/cart",verifyToken,tryCatch(controller.deletCart));
 userRoutes.post("/:id/wishlist",verifyToken,tryCatch(controller.addToWishlist));
 userRoutes.get("/:id/wishlist",verifyToken,tryCatch(controller.getWishList));
 userRoutes.delete("/:id/wishlist",verifyToken,tryCatch(controller.deleteWishList));
-
-
 userRoutes.post("/:id/payment", verifyToken, tryCatch(controller.payment));
 userRoutes.get("/payment/success",tryCatch(controller.success));
 userRoutes.post("/payment/cancel",tryCatch(controller.cancel));
+userRoutes.get("/:id/orders",tryCatch(controller.showOrders));
+
+
 
 module.exports = userRoutes;

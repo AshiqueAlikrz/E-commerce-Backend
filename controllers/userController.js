@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const User = require("../model/userSchema");
 const Product = require("../model/productSchema");
+const Order = require("../model/orderSchema");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 let successValues = {};
@@ -25,7 +26,7 @@ module.exports = {
   userLogin: async (req, res) => {
     const { username, password } = req.body;
     const user = await User.findOne({ username: username, password: password });
-    console.log(user);
+    // console.log(user);
     if (!user) {
       res.status(401).json({ message: "Invalid username or password" });
     } else {
@@ -61,7 +62,7 @@ module.exports = {
       res
         .status(200)
         .json({ status: "success", message: "Product found", data: product });
-    console.log(product);
+    // console.log(product);
   },
   getProductsByCategory: async (req, res) => {
     const category = req.params.categoryname;
@@ -82,7 +83,7 @@ module.exports = {
       const userId = req.params.id;
       const productId = req.body.id;
       const product = await Product.findById(productId);
-      console.log(product);
+      // console.log(product);
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
@@ -102,7 +103,7 @@ module.exports = {
   getUserCart: async (req, res) => {
     const id = req.params.id;
     const cart = await User.findOne({ _id: id }).populate("cart");
-    console.log(cart);
+    // console.log(cart);
     if (!cart) {
       res.status(404).json({ message: "not found" });
     } else
@@ -122,7 +123,7 @@ module.exports = {
         { $push: { wishlist: productId } }
       );
 
-      console.log(wishlist);
+      // console.log(wishlist);
       res
         .status(200)
         .json({ status: "added to wishlist succesfully", data: wishlist });
@@ -132,7 +133,7 @@ module.exports = {
   getWishList: async (req, res) => {
     const id = req.params.id;
     const wishlist = await User.findById(id).populate("wishlist");
-    console.log(wishlist);
+    // console.log(wishlist);
     if (!wishlist) {
       res.status(404).json({ message: "not found" });
     } else
@@ -151,7 +152,7 @@ module.exports = {
         { $pull: { wishlist: productId } }
       );
 
-      console.log(deleteWish);
+      // console.log(deleteWish);
       res.status(200).json({ status: "item deleted from wishlist" });
     } else res.status(404).json({ error: "Error updating wishlist" });
   },
@@ -225,7 +226,7 @@ module.exports = {
         total_amount: session.amount_total / 100,
       },
     };
-    console.log(user);
+    // console.log(user);
     res.status(200).json({
       status: "Success",
       message: "Strip payment session created",
@@ -235,25 +236,32 @@ module.exports = {
 
   success: async (req, res) => {
     const { id, user, newOrder } = successValues;
-    console.log("neworder:", id);
-    // if (user.length != 0) {
-    //   await User.updateOne(
-    //     { _id: temp.id },
-    //     {
-    //       $push: {
-    //         orders: {},
-    //       },
-    //     }
-    //   );
-    //   await User.updateOne({ _id: temp.id }, { cart: [] });
-    // }
+    // console.log("neworder:", id);
+    const order = await Order.create({ ...newOrder });
+    await User.findByIdAndUpdate({ _id: id }, { $push: { orders: order._id } });
+    user.cart = [];
+    await user.save();
+
     res.status(200).json({
       status: "success",
       message: "successfully added in order",
     });
   },
-
   cancel: async (req, res) => {
     res.json("cancel");
+  },
+  showOrders: async (req, res) => {
+    const id = req.params.id;
+    const showOrderproducts = await User.findById(id).populate("orders");
+    if (!id) {
+      res.status(404).json({ error, message: "user not found" });
+    } else {
+      res.status(200).json({
+        status: "success",
+        message: "successfully fetched",
+        data: showOrderproducts,
+      });
+    }
+    // console.log(showOrderproducts);
   },
 };
