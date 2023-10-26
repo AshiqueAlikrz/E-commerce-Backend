@@ -15,7 +15,7 @@ adminRouter.get('/products/:id',tokenVerify,tryCatch(controller.getproductById))
 adminRouter.get('/products',tokenVerify,tryCatch(controller.AllProducts))
 adminRouter.put('/products/:id',tokenVerify,tryCatch(controller.UpdateProduct))
 adminRouter.delete('/products',tokenVerify,tryCatch(controller.DeleteProduct))
-
+adminRouter.get("/stats",tokenVerify,tryCatch(controller.stats))
 
 
 module.exports = adminRouter;

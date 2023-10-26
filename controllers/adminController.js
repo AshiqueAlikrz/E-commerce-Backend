@@ -140,6 +140,31 @@ module.exports = {
       data: products,
     });
   },
+  stats: async (req, res) => {
+    const aggregation = User.aggregate([
+      { $unwind: "$orders" },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$orders.totalamount" }, 
+          totalItemsSold: { $sum: { $size: "$orders.product" }} 
+        },
+      },
+    ]);
+    console.log(aggregation);
+    const result=await aggregation.exec();
+    const totalRevenue=result[0].totalRevenue;
+    const totalItemsSold=result[0].totalItemsSold;
+
+    res.status(200).json({
+      status:"success",
+      message:"successfully fetched stats",
+      data:{
+        "Total Revenue": totalRevenue,
+          "Toal Item Sold": totalItemsSold
+      }
+    })
+  },
 };
 
-//admin controller 
+//admin controller
