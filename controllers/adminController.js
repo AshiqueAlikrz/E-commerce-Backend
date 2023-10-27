@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const User = require("../model/userSchema");
-const Product = require("../model/productSchema");
+const { Product, productSchemaValidation } = require("../model/productSchema");
 const Order = require("../model/orderSchema");
 
 module.exports = {
@@ -52,7 +52,14 @@ module.exports = {
   },
   createProduct: async (req, res) => {
     try {
-      const { title, description, price, image, category } = req.body;
+      const { error, value } = productSchemaValidation.validate(req.body);
+      if (error) {
+        res.status(400).json({
+          status: "error",
+          message: error.details[0].message,
+        });
+      }
+      const { title, description, price, image, category } = value;
 
       const product = await Product.create({
         title,
@@ -157,7 +164,6 @@ module.exports = {
       { $project: { _id: 0 } },
     ]);
 
-
     res.status(200).json({
       status: "success",
       message: "successfully fetched stats",
@@ -169,10 +175,10 @@ module.exports = {
     // console.log(orders);
     if (orders) {
       res.status(200).json({
-        status:"success",
-        message:"successfully fetched the order",
-        data:orders
-      })
-    }else res.status(404).json({message:"order not found"});
+        status: "success",
+        message: "successfully fetched the order",
+        data: orders,
+      });
+    } else res.status(404).json({ message: "order not found" });
   },
 };

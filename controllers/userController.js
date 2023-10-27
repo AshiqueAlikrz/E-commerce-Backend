@@ -1,45 +1,108 @@
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
-const User = require("../model/userSchema");
 const Product = require("../model/productSchema");
 const Order = require("../model/orderSchema");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const bcrypt = require("bcrypt");
+const {
+  User,
+  userRegisterValidation,
+  userLoginValidation,
+} = require("../model/userSchema");
 
 let successValues = {};
 
+// user registrater a account POST api/user/register
+
 module.exports = {
   register: async (req, res) => {
-    const { name, email, username, password } = req.body;
-    await User.create({
-      name: name,
-      email: email,
-      username: username,
-      password: password,
-    });
-    res.status(201).json({
-      status: "success",
-      message: "user registration successfull.",
-    });
-  },
+    try {
+      const { error, value } = userRegisterValidation.validate(req.body);
 
-  userLogin: async (req, res) => {
-    const { username, password } = req.body;
-    const user = await User.findOne({ username: username, password: password });
-    // console.log(user);
-    if (!user) {
-      res.status(401).json({ message: "Invalid username or password" });
-    } else {
-      const token = jwt.sign(
-        { username },
-        process.env.USER_ACCESS_TOKEN_SECRET
-      );
-      res.status(200).json({
-        status: "success",
-        message: "successfully logged in",
-        data: { jwt_token: token },
+      if (error) {
+        return res.status(400).json({
+          status: "error",
+          message: error.details[0].message,
+        });
+      }
+
+      const { name, email, username, password } = value;
+      
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({
+          status: "error",
+          message: "Email already exists.",
+        });
+      } else {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        console.log(hashedPassword);
+        // console.log(name, email, username, password)
+        await User.create({
+          name: name,
+          email: email,
+          username: username,
+          password: hashedPassword,
+        });
+
+        res.status(201).json({
+          status: "success",
+          message: "User registration successful.",
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        status: "error",
+        message: "Internal Server Error",
       });
     }
   },
+
+  // user login account POST api/user/login
+
+  userLogin: async (req, res) => {
+    const { error, value } = userLoginValidation.validate(req.body);
+    try {
+      if (error) {
+        return res.status(400).json({
+          status: "error",
+          message: error.details[0].message,
+        });
+      }
+
+      const { email, password } = value;
+      const user = await User.findOne({ email });
+      // console.log("body pass", user);
+
+      if (user) {
+        const comparePassword = await bcrypt.compare(password, user.password);
+        console.log("db pass", comparePassword);
+        if (comparePassword) {
+          const token = jwt.sign(
+            { email },
+            process.env.USER_ACCESS_TOKEN_SECRET
+          );
+          res.status(200).json({
+            status: "success",
+            message: "successfully logged in",
+            data: { jwt_token: token },
+          });
+        } else
+          res.status(500).json({
+            status: "incorrect password",
+          });
+      } else {
+        res.status(401).json({ message: "Invalid username or password" });
+      }
+    } catch (error) {
+      res.status(500).json({
+        status: "error",
+        message: error.message,
+      });
+    }
+  },
+
+ //show all the products GET api/user/products
 
   getAllProducts: async (req, res) => {
     const products = await Product.find();
@@ -49,6 +112,9 @@ module.exports = {
       data: products,
     });
   },
+
+   //show  products by id GET api/user/products/:id
+
   getProductsById: async (req, res) => {
     const id = req.params.id;
     const product = await Product.findById(id);
@@ -63,9 +129,12 @@ module.exports = {
         .json({ status: "success", message: "Product found", data: product });
     // console.log(product);
   },
+
+   //show  products by category GET api/user/products/category/categoryname
+
   getProductsByCategory: async (req, res) => {
     const category = req.params.categoryname;
-    const product = await Product.find({ category: category });
+    const product = await Product.find({category });
     if (!product) {
       res.status(404).json({
         status: "error",
@@ -76,6 +145,8 @@ module.exports = {
         .status(200)
         .json({ status: "success", message: "Product found", data: product });
   },
+
+  //add product to the cart  POST api/user/:id/cart
 
   addToCart: async (req, res) => {
     try {
@@ -99,6 +170,8 @@ module.exports = {
     }
   },
 
+  //show the product GET api/user/:id/cart
+
   getUserCart: async (req, res) => {
     const id = req.params.id;
     const cart = await User.findOne({ _id: id }).populate("cart");
@@ -112,6 +185,8 @@ module.exports = {
         data: cart,
       });
   },
+
+//add to wishlist POST api/user/:id/wishlist
 
   addToWishlist: async (req, res) => {
     const id = req.params.id;
@@ -129,6 +204,8 @@ module.exports = {
     } else res.status(404).json({ error: "Error updating wishlist" });
   },
 
+  //show the product GET api/user/:id/wishlist
+
   getWishList: async (req, res) => {
     const id = req.params.id;
     const wishlist = await User.findById(id).populate("wishlist");
@@ -142,6 +219,9 @@ module.exports = {
         data: wishlist,
       });
   },
+
+// delete from the wishlist DELETE api/user/:id/wishlist
+
   deleteWishList: async (req, res) => {
     const id = req.params.id;
     const productId = req.body.id;
@@ -155,6 +235,9 @@ module.exports = {
       res.status(200).json({ status: "item deleted from wishlist" });
     } else res.status(404).json({ error: "Error updating wishlist" });
   },
+
+  //delete from cart DELETE api/user/:id/cart
+
   deletCart: async (req, res) => {
     const id = req.params.id;
     const productId = req.body.id;
@@ -170,6 +253,8 @@ module.exports = {
         .status(404)
         .json({ error: "Error updating wishlist", data: deleteCart });
   },
+
+  //payment section POST api/user/:id/payment
 
   payment: async (req, res) => {
     const id = req.params.id;
@@ -236,8 +321,8 @@ module.exports = {
   success: async (req, res) => {
     const { id, user, newOrder } = successValues;
     console.log("neworder:", newOrder);
-     await Order.create({ ...newOrder });
-    console.log("odersssss",order);
+    await Order.create({ ...newOrder });
+    console.log("odersssss", order);
     await User.findByIdAndUpdate({ _id: id }, { $push: { orders: order._id } });
     // user.cart = [];
     await user.save();
@@ -250,6 +335,9 @@ module.exports = {
   cancel: async (req, res) => {
     res.json("cancel");
   },
+
+  //show order details GET api/user/:id/orders
+
   showOrders: async (req, res) => {
     const id = req.params.id;
     const showOrderproducts = await User.findById(id).populate("orders");
@@ -262,6 +350,6 @@ module.exports = {
         data: showOrderproducts,
       });
     }
-    console.log(showOrderproducts);
+    // console.log(showOrderproducts);
   },
 };
