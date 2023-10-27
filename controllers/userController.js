@@ -324,7 +324,7 @@ module.exports = {
     await Order.create({ ...newOrder });
     console.log("odersssss", order);
     await User.findByIdAndUpdate({ _id: id }, { $push: { orders: order._id } });
-    // user.cart = [];
+    user.cart = [];
     await user.save();
 
     res.status(200).json({
