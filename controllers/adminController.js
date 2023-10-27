@@ -148,32 +148,31 @@ module.exports = {
           _id: null,
           totalItemsSold: {
             $sum: {
-              $cond: [
-                { $isArray: "$products" },
-                { $size: "$products" },
-                0
-              ]
-            }
+              $cond: [{ $isArray: "$products" }, { $size: "$products" }, 0],
+            },
           },
-          totalRevenue: { $sum: { $toDouble: "$total_amount" } }
-        }
-      }
-      ,
-
+          totalRevenue: { $sum: { $toDouble: "$total_amount" } },
+        },
+      },
+      { $project: { _id: 0 } },
     ]);
-    const totalRevenue = aggregation[0].totalRevenue;
-    const totalItemsSold = aggregation[0].totalItemsSold;
-    
+
 
     res.status(200).json({
       status: "success",
       message: "successfully fetched stats",
-      data: {
-        "Total Revenue": totalRevenue,
-        "Total Item Sold": totalItemsSold,
-      },
+      data: aggregation,
     });
   },
+  AdminShowOrders: async (req, res) => {
+    const orders = await Order.find();
+    // console.log(orders);
+    if (orders) {
+      res.status(200).json({
+        status:"success",
+        message:"successfully fetched the order",
+        data:orders
+      })
+    }else res.status(404).json({message:"order not found"});
+  },
 };
-
-//admin controller
