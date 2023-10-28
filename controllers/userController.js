@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
-const Product = require("../model/productSchema");
+const {Product} = require("../model/productSchema")
 const Order = require("../model/orderSchema");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const bcrypt = require("bcrypt");
@@ -76,7 +76,7 @@ module.exports = {
 
       if (user) {
         const comparePassword = await bcrypt.compare(password, user.password);
-        console.log("db pass", comparePassword);
+        // console.log("db pass", comparePassword);
         if (comparePassword) {
           const token = jwt.sign(
             { email },
@@ -153,7 +153,7 @@ module.exports = {
       const userId = req.params.id;
       const productId = req.body.id;
       const product = await Product.findById(productId);
-      // console.log(product);
+      console.log(product);
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
@@ -166,7 +166,7 @@ module.exports = {
         .status(200)
         .json({ message: "Product added to cart", user: updatedUser });
     } catch (error) {
-      return res.status(500).json({ error: "Internal Server Error" });
+      return res.status(500).json({ error: error.message });
     }
   },
 
@@ -321,8 +321,8 @@ module.exports = {
   success: async (req, res) => {
     const { id, user, newOrder } = successValues;
     console.log("neworder:", newOrder);
-    await Order.create({ ...newOrder });
-    console.log("odersssss", order);
+    const order=await Order.create({ ...newOrder });
+    // console.log("odersssss", order);
     await User.findByIdAndUpdate({ _id: id }, { $push: { orders: order._id } });
     user.cart = [];
     await user.save();
@@ -341,13 +341,16 @@ module.exports = {
   showOrders: async (req, res) => {
     const id = req.params.id;
     const showOrderproducts = await User.findById(id).populate("orders");
+    const LastOrders =showOrderproducts.orders;
+    console.log(showOrderproducts);
     if (!id) {
       res.status(404).json({ error, message: "user not found" });
     } else {
+      const orderDetails = await Order.find({ _id: { $in: LastOrders } }).populate('products');
       res.status(200).json({
         status: "success",
         message: "successfully fetched",
-        data: showOrderproducts,
+        data: orderDetails,
       });
     }
     // console.log(showOrderproducts);

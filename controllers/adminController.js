@@ -2,6 +2,8 @@ const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const User = require("../model/userSchema");
 const { Product, productSchemaValidation } = require("../model/productSchema");
+const cloudinary = require("../utils/cloudinary");
+
 const Order = require("../model/orderSchema");
 
 module.exports = {
@@ -50,34 +52,50 @@ module.exports = {
       res.status(500).json({ error: "Internal Server Error" });
     }
   },
+
+
+
   createProduct: async (req, res) => {
     try {
       const { error, value } = productSchemaValidation.validate(req.body);
       if (error) {
-        res.status(400).json({
+        return res.status(400).json({
           status: "error",
           message: error.details[0].message,
         });
       }
       const { title, description, price, image, category } = value;
 
-      const product = await Product.create({
-        title,
-        description,
-        price,
-        image,
-        category,
-      });
+      cloudinary.uploader.upload(req.file.path, async function (err, result) {
+        if (err) {
+          console.log(err); 
+          return res.status(500).json({
+            success: false,
+            message: "Error uploading image",
+          });
+        }
 
-      console.log("Product created:", product);
-      res
-        .status(201)
-        .json({ message: "Product created successfully", product });
+        // Save the image URL and public_id in your product document
+        const product = await Product.create({
+          title,
+          description,
+          price,
+          image,
+          category,
+        });
+
+        console.log("Product created:", product);
+        res
+          .status(201)
+          .json({ message: "Product created successfully", product });
+      });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Internal Server Error" });
     }
   },
+
+
   getproductById: async (req, res) => {
     const id = req.params.id;
     try {
