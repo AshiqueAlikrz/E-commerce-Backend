@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
-const {Product} = require("../model/productSchema")
+const { Product } = require("../model/productSchema");
 const Order = require("../model/orderSchema");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const bcrypt = require("bcrypt");
@@ -25,9 +25,10 @@ module.exports = {
           message: error.details[0].message,
         });
       }
+      console.log(value);
 
       const { name, email, username, password } = value;
-      
+
       const existingUser = await User.findOne({ email });
       if (existingUser) {
         return res.status(400).json({
@@ -102,7 +103,7 @@ module.exports = {
     }
   },
 
- //show all the products GET api/user/products
+  //show all the products GET api/user/products
 
   getAllProducts: async (req, res) => {
     const products = await Product.find();
@@ -113,7 +114,7 @@ module.exports = {
     });
   },
 
-   //show  products by id GET api/user/products/:id
+  //show  products by id GET api/user/products/:id
 
   getProductsById: async (req, res) => {
     const id = req.params.id;
@@ -130,11 +131,11 @@ module.exports = {
     // console.log(product);
   },
 
-   //show  products by category GET api/user/products/category/categoryname
+  //show  products by category GET api/user/products/category/categoryname
 
   getProductsByCategory: async (req, res) => {
     const category = req.params.categoryname;
-    const product = await Product.find({category });
+    const product = await Product.find({ category });
     if (!product) {
       res.status(404).json({
         status: "error",
@@ -186,7 +187,7 @@ module.exports = {
       });
   },
 
-//add to wishlist POST api/user/:id/wishlist
+  //add to wishlist POST api/user/:id/wishlist
 
   addToWishlist: async (req, res) => {
     const id = req.params.id;
@@ -220,7 +221,7 @@ module.exports = {
       });
   },
 
-// delete from the wishlist DELETE api/user/:id/wishlist
+  // delete from the wishlist DELETE api/user/:id/wishlist
 
   deleteWishList: async (req, res) => {
     const id = req.params.id;
@@ -321,7 +322,7 @@ module.exports = {
   success: async (req, res) => {
     const { id, user, newOrder } = successValues;
     console.log("neworder:", newOrder);
-    const order=await Order.create({ ...newOrder });
+    const order = await Order.create({ ...newOrder });
     // console.log("odersssss", order);
     await User.findByIdAndUpdate({ _id: id }, { $push: { orders: order._id } });
     user.cart = [];
@@ -341,12 +342,14 @@ module.exports = {
   showOrders: async (req, res) => {
     const id = req.params.id;
     const showOrderproducts = await User.findById(id).populate("orders");
-    const LastOrders =showOrderproducts.orders;
+    const LastOrders = showOrderproducts.orders;
     console.log(showOrderproducts);
     if (!id) {
       res.status(404).json({ error, message: "user not found" });
     } else {
-      const orderDetails = await Order.find({ _id: { $in: LastOrders } }).populate('products');
+      const orderDetails = await Order.find({
+        _id: { $in: LastOrders },
+      }).populate("products");
       res.status(200).json({
         status: "success",
         message: "successfully fetched",

@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
-const User = require("../model/userSchema");
+const { User } = require("../model/userSchema");
 const { Product, productSchemaValidation } = require("../model/productSchema");
 const cloudinary = require("../utils/cloudinary");
 
@@ -8,14 +8,14 @@ const Order = require("../model/orderSchema");
 
 module.exports = {
   login: async (req, res) => {
-    const { username, password } = req.body;
-    console.log(process.env.ADMIN_USERNAME);
+    const { email, password } = req.body;
+    console.log(process.env.ADMIN_EMAIL);
     if (
-      username === process.env.ADMIN_USERNAME &&
+      email === process.env.ADMIN_EMAIL &&
       password === process.env.ADMIN_PASSWORD
     ) {
       const token = jwt.sign(
-        { username: username },
+        { email: email },
         process.env.ADMIN_ACCESS_TOKEN_SECRET
       );
       res.status(200).json({
@@ -33,12 +33,14 @@ module.exports = {
 
   getAllusers: async (req, res) => {
     const allusers = await User.find();
+
     res.status(200).json({
       status: "success",
       message: "Successfully fetched user datas.",
       data: allusers,
     });
   },
+
   getById: async (req, res) => {
     const id = req.params.id;
     try {
@@ -53,8 +55,6 @@ module.exports = {
     }
   },
 
-
-
   createProduct: async (req, res) => {
     try {
       const { error, value } = productSchemaValidation.validate(req.body);
@@ -64,37 +64,27 @@ module.exports = {
           message: error.details[0].message,
         });
       }
-      const { title, description, price, image, category } = value;
+      const { title, description, status, price, image, category, qty } = value;
 
-      cloudinary.uploader.upload(req.file.path, async function (err, result) {
-        if (err) {
-          console.log(err); 
-          return res.status(500).json({
-            success: false,
-            message: "Error uploading image",
-          });
-        }
-
-        // Save the image URL and public_id in your product document
-        const product = await Product.create({
-          title,
-          description,
-          price,
-          image,
-          category,
-        });
-
-        console.log("Product created:", product);
-        res
-          .status(201)
-          .json({ message: "Product created successfully", product });
+      const product = await Product.create({
+        title,
+        description,
+        status,
+        price,
+        image,
+        category,
+        qty,
       });
+
+      console.log("Product created:", product);
+      res
+        .status(201)
+        .json({ message: "Product created successfully", product });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Internal Server Error" });
     }
   },
-
 
   getproductById: async (req, res) => {
     const id = req.params.id;
