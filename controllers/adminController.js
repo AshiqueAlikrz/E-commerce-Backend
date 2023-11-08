@@ -10,14 +10,8 @@ module.exports = {
   login: async (req, res) => {
     const { email, password } = req.body;
     console.log(process.env.ADMIN_EMAIL);
-    if (
-      email === process.env.ADMIN_EMAIL &&
-      password === process.env.ADMIN_PASSWORD
-    ) {
-      const token = jwt.sign(
-        { email: email },
-        process.env.ADMIN_ACCESS_TOKEN_SECRET
-      );
+    if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
+      const token = jwt.sign({ email: email }, process.env.ADMIN_ACCESS_TOKEN_SECRET);
       res.status(200).json({
         status: "success",
         message: "Admin Successfully logged In.",
@@ -59,27 +53,29 @@ module.exports = {
     try {
       const { error, value } = productSchemaValidation.validate(req.body);
       if (error) {
+        console.log("hi error");
         return res.status(400).json({
           status: "error",
           message: error.details[0].message,
         });
       }
-      const { title, description, status, price, image, category, qty } = value;
+      const { title, description, status, price, src, category, brand, qty } = value;
+      
+      console.log("data", title, description, status, price, src, category);
 
       const product = await Product.create({
         title,
         description,
         status,
         price,
-        image,
+        src,
+        brand,
         category,
         qty,
       });
 
       console.log("Product created:", product);
-      res
-        .status(201)
-        .json({ message: "Product created successfully", product });
+      res.status(201).json({ message: "Product created successfully", product });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Internal Server Error" });
@@ -109,22 +105,26 @@ module.exports = {
       data: allProducts,
     });
   },
+
   UpdateProduct: async (req, res) => {
-    const { title, description, price, image, category, id } = req.body;
-    console.log(id);
+    const { title, description, price, category, id, src, qty, status, brand } = req.body;
     const product = await Product.findById(id);
+    console.log(product);
 
     if (!product) {
       res.status(404).json({ error: "Product not found" });
     } else {
-      await Product.updateOne(
+      const pushProduct = await Product.updateOne(
         { _id: id },
         {
           $set: {
             title: title,
             description: description,
+            src: src,
             price: price,
-            image: image,
+            brand: brand,
+            qty: qty,
+            status: status,
             category: category,
           },
         }
@@ -132,11 +132,13 @@ module.exports = {
       res.status(201).json({
         status: "success",
         message: "Successfully updated the product.",
+        data: pushProduct,
       });
+      console.log("pushProduct", pushProduct);
     }
   },
   DeleteProduct: async (req, res) => {
-    const { id } = req.body;
+    const id = req.params.id;
     await Product.findByIdAndDelete(id);
     res.status(201).json({
       status: "success",

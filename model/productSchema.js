@@ -4,20 +4,23 @@ const joiValidate = require("joi");
 const productSchema = new mongoose.Schema({
   title: String,
   description: String,
-  status:String,
+  status: String,
   price: Number,
-  image:String,
+  src: String,
+  brand: String,
   category: String,
-  qty:Number
+  qty: Number,
 });
 
 const productSchemaValidation = joiValidate.object({
   title: joiValidate.string().required(),
   description: joiValidate.string().required(),
-  string: joiValidate.string().required(),
   price: joiValidate.number().required(),
-  image: joiValidate.string().required(),
+  src: joiValidate.string().required(),
   category: joiValidate.string().required(),
+  status: joiValidate.string().required(),
+  qty: joiValidate.number().required(),
+  brand: joiValidate.string().required(),
 });
 
 const Product = mongoose.model("Product", productSchema);

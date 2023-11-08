@@ -4,12 +4,10 @@ const joiValidate = require("joi");
 
 // const { Types } = require('mongoose');
 
-
 function generateRandomUsername(name) {
   let randomFourDigitNumber = Math.floor(1000 + Math.random() * 9000);
   return `${name}${randomFourDigitNumber}`;
 }
-
 
 const userSchema = new mongoose.Schema({
   name: String,
@@ -21,7 +19,7 @@ const userSchema = new mongoose.Schema({
     },
   },
   password: String,
-  cart: [{ type: mongoose.Schema.ObjectId, ref: "Product" }],
+  cart: [{ product: { type: mongoose.Schema.ObjectId, ref: "Product" }, qty: { type: Number, default: 1 } }],
   wishlist: [{ type: mongoose.Schema.ObjectId, ref: "Product" }],
   orders: [],
 });

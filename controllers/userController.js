@@ -4,11 +4,7 @@ const { Product } = require("../model/productSchema");
 const Order = require("../model/orderSchema");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const bcrypt = require("bcrypt");
-const {
-  User,
-  userRegisterValidation,
-  userLoginValidation,
-} = require("../model/userSchema");
+const { User, userRegisterValidation, userLoginValidation } = require("../model/userSchema");
 
 let successValues = {};
 
@@ -25,7 +21,7 @@ module.exports = {
           message: error.details[0].message,
         });
       }
-      console.log(value);
+      // console.log(value);
 
       const { name, email, username, password } = value;
 
@@ -37,7 +33,7 @@ module.exports = {
         });
       } else {
         const hashedPassword = await bcrypt.hash(password, 10);
-        console.log(hashedPassword);
+        // console.log(hashedPassword);
         // console.log(name, email, username, password)
         await User.create({
           name: name,
@@ -72,28 +68,28 @@ module.exports = {
       }
 
       const { email, password } = value;
+      // console.log(value);
       const user = await User.findOne({ email });
       // console.log("body pass", user);
 
       if (user) {
         const comparePassword = await bcrypt.compare(password, user.password);
-        // console.log("db pass", comparePassword);
+
         if (comparePassword) {
-          const token = jwt.sign(
-            { email },
-            process.env.USER_ACCESS_TOKEN_SECRET
-          );
-          res.status(200).json({
+          const token = jwt.sign({ email }, process.env.USER_ACCESS_TOKEN_SECRET);
+          // console.log(token)
+          return res.status(200).json({
             status: "success",
             message: "successfully logged in",
-            data: { jwt_token: token },
+            data: { jwt_token: token, id: user._id, name: user.username },
           });
-        } else
-          res.status(500).json({
+        } else {
+          return res.status(500).json({
             status: "incorrect password",
           });
+        }
       } else {
-        res.status(401).json({ message: "Invalid username or password" });
+        return res.status(401).json({ message: "Invalid username or password" });
       }
     } catch (error) {
       res.status(500).json({
@@ -118,16 +114,14 @@ module.exports = {
 
   getProductsById: async (req, res) => {
     const id = req.params.id;
+    console.log(id);
     const product = await Product.findById(id);
     if (!product) {
       res.status(404).json({
         status: "error",
         message: "Product not found",
       });
-    } else
-      res
-        .status(200)
-        .json({ status: "success", message: "Product found", data: product });
+    } else res.status(200).json({ status: "success", message: "Product found", data: product });
     // console.log(product);
   },
 
@@ -141,10 +135,7 @@ module.exports = {
         status: "error",
         message: "product not found",
       });
-    } else
-      res
-        .status(200)
-        .json({ status: "success", message: "Product found", data: product });
+    } else res.status(200).json({ status: "success", message: "Product found", data: product });
   },
 
   //add product to the cart  POST api/user/:id/cart
@@ -153,30 +144,52 @@ module.exports = {
     try {
       const userId = req.params.id;
       const productId = req.body.id;
+      // console.log("userId",userId);
+      // console.log("productIdsss",productId);
       const product = await Product.findById(productId);
-      console.log(product);
+      // console.log(product);
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
-      await User.findByIdAndUpdate(
-        { _id: userId },
-        { $push: { cart: product } }
-      );
+      const hello = await User.findByIdAndUpdate({ _id: userId }, { $addToSet: { cart: { product: product } } });
+      // console.log("hello", hello);
       const updatedUser = await User.findById(userId);
-      return res
-        .status(200)
-        .json({ message: "Product added to cart", user: updatedUser });
+      // console.log("updatedUser",updatedUser);
+      return res.status(200).json({ message: "Product added to cart", user: updatedUser });
     } catch (error) {
       return res.status(500).json({ error: error.message });
     }
+  },
+
+  qtyChange: async (req, res) => {
+    const userId = req.params.id;
+    const { id, num } = req.body;
+
+    console.log("userid", userId, "num", num, "productId", id);
+
+    const user = await User.findById(userId);
+
+    if (!userId) {
+      res.status(404).json({ error: error.message });
+    }
+
+    const updatedQty = (user.cart.id(id).qty += num);
+
+    // await User.updateOne({ _id: userId, "cart._id": itemId }, { $set: { "cart.$.qty": updatedQty } });
+    if (updatedQty > 0) {
+      await user.save();
+    }
+    console.log("updatedQty", updatedQty);
+
+    res.status(200).json({ status: "success", message: "Cart item quantity updated", data: user.cart });
   },
 
   //show the product GET api/user/:id/cart
 
   getUserCart: async (req, res) => {
     const id = req.params.id;
-    const cart = await User.findOne({ _id: id }).populate("cart");
-    // console.log(cart);
+    const cart = await User.findOne({ _id: id }).populate("cart.product");
+    // console.log("cart",cart);
     if (!cart) {
       res.status(404).json({ message: "not found" });
     } else
@@ -193,15 +206,10 @@ module.exports = {
     const id = req.params.id;
     const productId = req.body.id;
     if (productId) {
-      const wishlist = await User.findByIdAndUpdate(
-        { _id: id },
-        { $push: { wishlist: productId } }
-      );
+      const wishlist = await User.findByIdAndUpdate({ _id: id }, { $push: { wishlist: productId } });
 
       // console.log(wishlist);
-      res
-        .status(200)
-        .json({ status: "added to wishlist succesfully", data: wishlist });
+      res.status(200).json({ status: "added to wishlist succesfully", data: wishlist });
     } else res.status(404).json({ error: "Error updating wishlist" });
   },
 
@@ -227,10 +235,7 @@ module.exports = {
     const id = req.params.id;
     const productId = req.body.id;
     if (productId) {
-      const deleteWish = await User.findByIdAndUpdate(
-        { _id: id },
-        { $pull: { wishlist: productId } }
-      );
+      const deleteWish = await User.findByIdAndUpdate({ _id: id }, { $pull: { wishlist: productId } });
 
       // console.log(deleteWish);
       res.status(200).json({ status: "item deleted from wishlist" });
@@ -240,19 +245,14 @@ module.exports = {
   //delete from cart DELETE api/user/:id/cart
 
   deletCart: async (req, res) => {
-    const id = req.params.id;
-    const productId = req.body.id;
+    const userId = req.params.id;
+    console.log("userId", userId);
+    const productId = req.params.product;
+    console.log("productId", productId);
     if (productId) {
-      const deleteCart = await User.findByIdAndDelete(
-        { _id: id },
-        { $pull: { cart: productId } }
-      );
-
+      const deleteCart = await User.findByIdAndDelete({ _id: id }, { $pull: { cart: { product: productId } } });
       res.status(200).json({ status: "item deleted from cart" });
-    } else
-      res
-        .status(404)
-        .json({ error: "Error updating wishlist", data: deleteCart });
+    } else res.status(404).json({ error: "Error updating wishlist", data: deleteCart });
   },
 
   //payment section POST api/user/:id/payment
@@ -303,9 +303,7 @@ module.exports = {
       id,
       user,
       newOrder: {
-        products: user.cart.map(
-          (product) => new mongoose.Types.ObjectId(product.id)
-        ),
+        products: user.cart.map((product) => new mongoose.Types.ObjectId(product.id)),
         order_id: Date.now(),
         payment_id: session.id,
         total_amount: session.amount_total / 100,
@@ -321,7 +319,7 @@ module.exports = {
 
   success: async (req, res) => {
     const { id, user, newOrder } = successValues;
-    console.log("neworder:", newOrder);
+    // console.log("neworder:", newOrder);
     const order = await Order.create({ ...newOrder });
     // console.log("odersssss", order);
     await User.findByIdAndUpdate({ _id: id }, { $push: { orders: order._id } });
@@ -343,7 +341,7 @@ module.exports = {
     const id = req.params.id;
     const showOrderproducts = await User.findById(id).populate("orders");
     const LastOrders = showOrderproducts.orders;
-    console.log(showOrderproducts);
+    // console.log(showOrderproducts);
     if (!id) {
       res.status(404).json({ error, message: "user not found" });
     } else {

@@ -11,12 +11,12 @@ adminRouter.use(express.json())
 adminRouter.post('/login',tryCatch(controller.login));
 adminRouter.get('/users',tryCatch(controller.getAllusers));
 adminRouter.get('/users/:id',tokenVerify,tryCatch(controller.getById))
-adminRouter.post('/products',tokenVerify,upload,tryCatch(controller.createProduct))
+adminRouter.post('/products',tryCatch(controller.createProduct))
 adminRouter.get('/products/category',tokenVerify,tryCatch(controller.getproductByCategory))
 adminRouter.get('/products/:id',tokenVerify,tryCatch(controller.getproductById))
-adminRouter.get('/products',tokenVerify,tryCatch(controller.AllProducts))
-adminRouter.put('/products/:id',tokenVerify,upload,tryCatch(controller.UpdateProduct))
-adminRouter.delete('/products',tokenVerify,tryCatch(controller.DeleteProduct))
+adminRouter.get('/products',tryCatch(controller.AllProducts))
+adminRouter.put('/products',tryCatch(controller.UpdateProduct))
+adminRouter.delete('/products/:id',tryCatch(controller.DeleteProduct))
 adminRouter.get("/stats",tokenVerify,tryCatch(controller.stats))
 adminRouter.get("/orders",tokenVerify,tryCatch(controller.AdminShowOrders))
 
