@@ -9,7 +9,7 @@ const { User, userRegisterValidation, userLoginValidation } = require("../model/
 let successValues = {};
 
 // user registrater a account POST api/user/register
-
+ 
 module.exports = {
   register: async (req, res) => {
     try {
@@ -114,7 +114,7 @@ module.exports = {
 
   getProductsById: async (req, res) => {
     const id = req.params.id;
-    console.log(id);
+    console.log("getProductsById",id);
     const product = await Product.findById(id);
     if (!product) {
       res.status(404).json({
