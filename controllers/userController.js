@@ -81,7 +81,7 @@ module.exports = {
           return res.status(200).json({
             status: "success",
             message: "successfully logged in",
-            data: { jwt_token: token, id: user._id, name: user.username },
+            data: { jwt_token: token, id: user._id, name: user.username, cart: user.cart },
           });
         } else {
           return res.status(500).json({
@@ -188,6 +188,7 @@ module.exports = {
 
   getUserCart: async (req, res) => {
     const id = req.params.id;
+    // console.log("getId",id);
     const cart = await User.findOne({ _id: id }).populate("cart.product");
     // console.log("cart",cart);
     if (!cart) {
@@ -245,14 +246,30 @@ module.exports = {
   //delete from cart DELETE api/user/:id/cart
 
   deletCart: async (req, res) => {
-    const userId = req.params.id;
-    console.log("userId", userId);
-    const productId = req.params.product;
-    console.log("productId", productId);
-    if (productId) {
-      const deleteCart = await User.findByIdAndDelete({ _id: id }, { $pull: { cart: { product: productId } } });
-      res.status(200).json({ status: "item deleted from cart" });
-    } else res.status(404).json({ error: "Error updating wishlist", data: deleteCart });
+    try {
+      const userId = req.params.id;
+      const productId = req.params.product;
+      console.log("userId", userId);
+      console.log("productId", productId);
+
+      if (productId) {
+        const deleteCart = await User.findByIdAndUpdate(
+          { _id: userId },
+          { $pull: { cart: { _id: productId } } },
+          { new: true }
+        );
+        if (deleteCart) {
+          res.status(200).json({ status: "item deleted from cart", data: deleteCart });
+        } else {
+          res.status(404).json({ error: "Error updating cart" });
+        }
+      } else {
+        res.status(404).json({ error: "Invalid product ID" });
+      }
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
   },
 
   //payment section POST api/user/:id/payment

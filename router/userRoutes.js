@@ -8,19 +8,17 @@ userRoutes.use(express.json());
 
 userRoutes.post("/register",tryCatch(controller.register));
 userRoutes.post("/login",tryCatch(controller.userLogin));
-userRoutes.post("/:id/cart",tryCatch(controller.addToCart));
+userRoutes.get("/:id/cart",verifyToken,tryCatch(controller.getUserCart));
+userRoutes.post("/:id/cart",verifyToken,tryCatch(controller.addToCart));
 userRoutes.get ("/products",verifyToken,tryCatch(controller.getAllProducts));
-userRoutes.get ("/products/:id",tryCatch(controller.getProductsById));
+userRoutes.get ("/products/:id",verifyToken,tryCatch(controller.getProductsById));
 userRoutes.get ("/products/category/:categoryname",verifyToken,tryCatch(controller.getProductsByCategory));
-userRoutes.get("/:id/cart",tryCatch(controller.getUserCart));
-
-userRoutes.put("/:id/cart",tryCatch(controller.qtyChange));
-
-userRoutes.delete("/:id/cart",tryCatch(controller.deletCart));
+userRoutes.put("/:id/cart",verifyToken,tryCatch(controller.qtyChange));
+userRoutes.delete("/:id/cart/:product",verifyToken,tryCatch(controller.deletCart));
 userRoutes.post("/:id/wishlist",verifyToken,tryCatch(controller.addToWishlist));
 userRoutes.get("/:id/wishlist",verifyToken,tryCatch(controller.getWishList));
 userRoutes.delete("/:id/wishlist",verifyToken,tryCatch(controller.deleteWishList));
-userRoutes.post("/:id/payment", verifyToken, tryCatch(controller.payment));
+userRoutes.post("/:id/payment", tryCatch(controller.payment));
 userRoutes.get("/payment/success",tryCatch(controller.success));
 userRoutes.post("/payment/cancel",tryCatch(controller.cancel));
 userRoutes.get("/:id/orders",tryCatch(controller.showOrders));
