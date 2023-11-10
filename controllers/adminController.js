@@ -182,7 +182,6 @@ module.exports = {
   },
   AdminShowOrders: async (req, res) => {
     const orders = await Order.find();
-    // console.log(orders);
     if (orders) {
       res.status(200).json({
         status: "success",

@@ -276,11 +276,12 @@ module.exports = {
 
   payment: async (req, res) => {
     const id = req.params.id;
-    const user = await User.findById(id).populate("cart"); //user with cart
+    const user = await User.findById(id).populate("cart.product");
     if (!user) {
       return res.status(404).json({ message: "user not found " });
     }
     const cartItems = user.cart;
+      // console.log("cartItems product paymnet",cartItems); //user with cart
     if (cartItems.length === 0) {
       return res.status(400).json({ message: "Your cart is empty" });
     }
@@ -290,12 +291,12 @@ module.exports = {
         price_data: {
           currency: "inr",
           product_data: {
-            name: item.title,
-            description: item.description,
+            name: item.product.title,
+            description: item.product.description,
           },
-          unit_amount: Math.round(item.price * 100), // when item.price only given ,error occur, why ? check its reason . why multiply 100
+          unit_amount: Math.round(item.product.price * 100), // when item.price only given ,error occur, why ? check its reason . why multiply 100
         },
-        quantity: 1,
+        quantity: item.qty,
       };
     });
 
@@ -305,8 +306,8 @@ module.exports = {
       payment_method_types: ["card"], //, 'apple_pay', 'google_pay', 'alipay',card
       line_items: lineItems,
       mode: "payment",
-      success_url: "http://localhost:3000/api/user/payment/success", // Replace with your success URL
-      cancel_url: "http://localhost:3000/api/user/payment/cancel", // Replace with your cancel URL
+      success_url: "http://localhost:3000/payment/success", // Replace with your success URL
+      cancel_url: "http://localhost:3000/payment/cancel", // Replace with your cancel URL
     });
 
     if (!session) {
@@ -320,7 +321,7 @@ module.exports = {
       id,
       user,
       newOrder: {
-        products: user.cart.map((product) => new mongoose.Types.ObjectId(product.id)),
+        products: user.cart.map((product) => new mongoose.Types.ObjectId(product.product._id)),
         order_id: Date.now(),
         payment_id: session.id,
         total_amount: session.amount_total / 100,
@@ -336,9 +337,8 @@ module.exports = {
 
   success: async (req, res) => {
     const { id, user, newOrder } = successValues;
-    // console.log("neworder:", newOrder);
+    // console.log("neworder:",id, user,newOrder);
     const order = await Order.create({ ...newOrder });
-    // console.log("odersssss", order);
     await User.findByIdAndUpdate({ _id: id }, { $push: { orders: order._id } });
     user.cart = [];
     await user.save();
@@ -346,6 +346,7 @@ module.exports = {
     res.status(200).json({
       status: "success",
       message: "successfully added in order",
+      data: order,
     });
   },
   cancel: async (req, res) => {
