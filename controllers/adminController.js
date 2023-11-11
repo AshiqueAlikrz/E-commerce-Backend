@@ -60,7 +60,7 @@ module.exports = {
         });
       }
       const { title, description, status, price, src, category, brand, qty } = value;
-      
+
       console.log("data", title, description, status, price, src, category);
 
       const product = await Product.create({
@@ -180,6 +180,7 @@ module.exports = {
       data: aggregation,
     });
   },
+  
   AdminShowOrders: async (req, res) => {
     const orders = await Order.find();
     if (orders) {

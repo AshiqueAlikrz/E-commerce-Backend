@@ -9,7 +9,7 @@ const { User, userRegisterValidation, userLoginValidation } = require("../model/
 let successValues = {};
 
 // user registrater a account POST api/user/register
- 
+
 module.exports = {
   register: async (req, res) => {
     try {
@@ -114,7 +114,7 @@ module.exports = {
 
   getProductsById: async (req, res) => {
     const id = req.params.id;
-    console.log("getProductsById",id);
+    console.log("getProductsById", id);
     const product = await Product.findById(id);
     if (!product) {
       res.status(404).json({
@@ -174,12 +174,13 @@ module.exports = {
     }
 
     const updatedQty = (user.cart.id(id).qty += num);
+    console.log("updatedQty", updatedQty);
 
-    // await User.updateOne({ _id: userId, "cart._id": itemId }, { $set: { "cart.$.qty": updatedQty } });
+    // await User.updateOne({ _id: userId, "cart._id": id }, { $set: { "cart.qty": updatedQty } });
     if (updatedQty > 0) {
+      console.log("object");
       await user.save();
     }
-    console.log("updatedQty", updatedQty);
 
     res.status(200).json({ status: "success", message: "Cart item quantity updated", data: user.cart });
   },
@@ -276,15 +277,17 @@ module.exports = {
 
   payment: async (req, res) => {
     const id = req.params.id;
+    console.log("cartItems product paymnet id", id);
     const user = await User.findById(id).populate("cart.product");
+
     if (!user) {
       return res.status(404).json({ message: "user not found " });
     }
     const cartItems = user.cart;
-      // console.log("cartItems product paymnet",cartItems); //user with cart
     if (cartItems.length === 0) {
       return res.status(400).json({ message: "Your cart is empty" });
     }
+    console.log("cartItems product paymnet", cartItems);
 
     const lineItems = cartItems.map((item) => {
       return {
@@ -321,13 +324,17 @@ module.exports = {
       id,
       user,
       newOrder: {
-        products: user.cart.map((product) => new mongoose.Types.ObjectId(product.product._id)),
+        products: user.cart.map((product) => ({
+          product_id: new mongoose.Types.ObjectId(product.product._id),
+          qty: product.qty,
+        })),
         order_id: Date.now(),
         payment_id: session.id,
         total_amount: session.amount_total / 100,
       },
     };
-    // console.log("successValues",successValues);
+
+    console.log("succsval", successValues);
     res.status(200).json({
       status: "Success",
       message: "Strip payment session created",
@@ -337,8 +344,10 @@ module.exports = {
 
   success: async (req, res) => {
     const { id, user, newOrder } = successValues;
-    // console.log("neworder:",id, user,newOrder);
+    // console.log("neworder:","id",id,"user", user,newOrder);
+
     const order = await Order.create({ ...newOrder });
+    console.log("orderSchema", order);
     await User.findByIdAndUpdate({ _id: id }, { $push: { orders: order._id } });
     user.cart = [];
     await user.save();
