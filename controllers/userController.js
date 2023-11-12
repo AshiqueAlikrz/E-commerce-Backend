@@ -146,16 +146,22 @@ module.exports = {
       const productId = req.body.id;
       // console.log("userId",userId);
       // console.log("productIdsss",productId);
-      const product = await Product.findById(productId);
-      // console.log(product);
-      if (!product) {
-        return res.status(404).json({ error: "Product not found" });
+      const existProduct = await User.findOne({ _id: userId, cart: { $elemMatch: { product: productId } } });
+      if (existProduct) {
+        console.log("existProduct", existProduct);
+        return res.status(200).json({ message: "already in cart" });
+      } else {
+        const product = await Product.findById(productId);
+        // console.log(product);
+        if (!product) {
+          return res.status(404).json({ error: "Product not found" });
+        }
+        const hello = await User.findByIdAndUpdate({ _id: userId }, { $addToSet: { cart: { product: product } } });
+        // console.log("hello", hello);
+        const updatedUser = await User.findById(userId);
+        // console.log("updatedUser",updatedUser);
+        return res.status(200).json({ message: "Product added to cart", user: updatedUser });
       }
-      const hello = await User.findByIdAndUpdate({ _id: userId }, { $addToSet: { cart: { product: product } } });
-      // console.log("hello", hello);
-      const updatedUser = await User.findById(userId);
-      // console.log("updatedUser",updatedUser);
-      return res.status(200).json({ message: "Product added to cart", user: updatedUser });
     } catch (error) {
       return res.status(500).json({ error: error.message });
     }
