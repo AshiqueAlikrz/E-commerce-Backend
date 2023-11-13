@@ -149,7 +149,7 @@ module.exports = {
       const existProduct = await User.findOne({ _id: userId, cart: { $elemMatch: { product: productId } } });
       if (existProduct) {
         console.log("existProduct", existProduct);
-        return res.status(200).json({ message: "already in cart" });
+        return res.status(404).json({ message: "already in cartss" });
       } else {
         const product = await Product.findById(productId);
         // console.log(product);
@@ -300,6 +300,7 @@ module.exports = {
         price_data: {
           currency: "inr",
           product_data: {
+            images: [item.product.src],
             name: item.product.title,
             description: item.product.description,
           },
@@ -372,21 +373,21 @@ module.exports = {
 
   showOrders: async (req, res) => {
     const id = req.params.id;
-    const showOrderproducts = await User.findById(id).populate("orders");
-    const LastOrders = showOrderproducts.orders;
-    // console.log(showOrderproducts);
     if (!id) {
-      res.status(404).json({ error, message: "user not found" });
+      return res.status(404).json({ error, message: "user not found" });
     } else {
+      const showOrderproducts = await User.findById(id).populate("orders");
+      const LastOrdersId = showOrderproducts.orders;
       const orderDetails = await Order.find({
-        _id: { $in: LastOrders },
-      }).populate("products");
+        _id: { $in: LastOrdersId },
+      }).populate("products.product_id");
       res.status(200).json({
         status: "success",
         message: "successfully fetched",
         data: orderDetails,
       });
-    }
-    // console.log(showOrderproducts);
+      console.log("orderDetails", orderDetails);
+    }    // console.log(showOrderproducts);
+
   },
 };
