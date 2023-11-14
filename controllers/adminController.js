@@ -4,6 +4,7 @@ const { User } = require("../model/userSchema");
 const { Product, productSchemaValidation } = require("../model/productSchema");
 const cloudinary = require("../utils/cloudinary");
 
+
 const Order = require("../model/orderSchema");
 
 module.exports = {
@@ -61,7 +62,6 @@ module.exports = {
       }
       const { title, description, status, price, src, category, brand, qty } = value;
 
-      console.log("data", title, description, status, price, src, category);
 
       const product = await Product.create({
         title,

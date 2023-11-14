@@ -21,7 +21,6 @@ module.exports = {
           message: error.details[0].message,
         });
       }
-      // console.log(value);
 
       const { name, email, username, password } = value;
 
@@ -33,8 +32,6 @@ module.exports = {
         });
       } else {
         const hashedPassword = await bcrypt.hash(password, 10);
-        // console.log(hashedPassword);
-        // console.log(name, email, username, password)
         await User.create({
           name: name,
           email: email,
@@ -68,16 +65,13 @@ module.exports = {
       }
 
       const { email, password } = value;
-      // console.log(value);
       const user = await User.findOne({ email });
-      // console.log("body pass", user);
 
       if (user) {
         const comparePassword = await bcrypt.compare(password, user.password);
 
         if (comparePassword) {
           const token = jwt.sign({ email }, process.env.USER_ACCESS_TOKEN_SECRET);
-          // console.log(token)
           return res.status(200).json({
             status: "success",
             message: "successfully logged in",
@@ -144,22 +138,16 @@ module.exports = {
     try {
       const userId = req.params.id;
       const productId = req.body.id;
-      // console.log("userId",userId);
-      // console.log("productIdsss",productId);
       const existProduct = await User.findOne({ _id: userId, cart: { $elemMatch: { product: productId } } });
       if (existProduct) {
-        console.log("existProduct", existProduct);
         return res.status(404).json({ message: "already in cartss" });
       } else {
         const product = await Product.findById(productId);
-        // console.log(product);
         if (!product) {
           return res.status(404).json({ error: "Product not found" });
         }
-        const hello = await User.findByIdAndUpdate({ _id: userId }, { $addToSet: { cart: { product: product } } });
-        // console.log("hello", hello);
+        await User.findByIdAndUpdate({ _id: userId }, { $addToSet: { cart: { product: product } } });
         const updatedUser = await User.findById(userId);
-        // console.log("updatedUser",updatedUser);
         return res.status(200).json({ message: "Product added to cart", user: updatedUser });
       }
     } catch (error) {
@@ -180,7 +168,6 @@ module.exports = {
     }
 
     const updatedQty = (user.cart.id(id).qty += num);
-    console.log("updatedQty", updatedQty);
 
     // await User.updateOne({ _id: userId, "cart._id": id }, { $set: { "cart.qty": updatedQty } });
     if (updatedQty > 0) {
@@ -195,9 +182,7 @@ module.exports = {
 
   getUserCart: async (req, res) => {
     const id = req.params.id;
-    // console.log("getId",id);
     const cart = await User.findOne({ _id: id }).populate("cart.product");
-    // console.log("cart",cart);
     if (!cart) {
       res.status(404).json({ message: "not found" });
     } else
@@ -226,7 +211,6 @@ module.exports = {
   getWishList: async (req, res) => {
     const id = req.params.id;
     const wishlist = await User.findById(id).populate("wishlist");
-    // console.log(wishlist);
     if (!wishlist) {
       res.status(404).json({ message: "not found" });
     } else
@@ -387,7 +371,6 @@ module.exports = {
         data: orderDetails,
       });
       console.log("orderDetails", orderDetails);
-    }    // console.log(showOrderproducts);
-
+    } // console.log(showOrderproducts);
   },
 };

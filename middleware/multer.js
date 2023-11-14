@@ -11,7 +11,7 @@ const storage = multer.diskStorage({
 const uploads = multer({ storage: storage });
 
 const upload = (req, res, next) => {
-  uploads.single("image")(req, res, async (err) => {
+  uploads.single("src")(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ message: err.message });
     }

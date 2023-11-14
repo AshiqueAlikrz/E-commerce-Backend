@@ -3,7 +3,6 @@ const adminRouter = express.Router();
 const controller = require('../controllers/adminController');
 const tryCatch=require('../middleware/tryCatchMiddleware')
 const tokenVerify = require('../middleware/adminAuthMiddleware')
-const upload =require('../middleware/multer')
 
 
 adminRouter.use(express.json())
