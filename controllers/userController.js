@@ -75,7 +75,7 @@ module.exports = {
           return res.status(200).json({
             status: "success",
             message: "successfully logged in",
-            data: { jwt_token: token, id: user._id, name: user.username, cart: user.cart },
+            data: { jwt_token: token, id: user._id, name: user.name, cart: user.cart },
           });
         } else {
           return res.status(500).json({
